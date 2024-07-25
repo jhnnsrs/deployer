@@ -1,0 +1,11 @@
+{
+  "name": "deployer vanilla Devcontainer",
+  "build": {
+    "dockerfile": "/home/jhnnsrs/Code/apps/deployer/.arkitekt_next/flavours/vanilla/Dockerfile",
+    "context": "../.."
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "runArgs": ["--network=host"]
+}

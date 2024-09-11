@@ -47,9 +47,8 @@ async def on_startup(state):
     print("Check for containers that are no longer pods?")
 
     x = await adeclare_backend(
-        instance_id=state.get("instance_id"), name="Apptainer", kind="apptainer"
+        instance_id=state.get("instance_id"), name="Docker", kind="apptainer"
     )
-
 
     return {
         "docker": from_env(),
@@ -147,13 +146,14 @@ def install_node(node_hash: str) -> Pod:
 
     return z
 
+
 @register(name="Install definition")
 def install_definition(defi: Definition) -> Pod:
     """Install definition
-    
+
     Installs a definition and returns the pod that is running it.
-    
-    
+
+
     """
     env = EnvironmentInput(
         containerType=ContainerType.DOCKER
@@ -197,8 +197,6 @@ def install_definition(defi: Definition) -> Pod:
     )
 
     return z
-
-
 
 
 @register(name="Runner")
@@ -326,6 +324,8 @@ def deploy(release: Release) -> Pod:
     progress(30)
 
     print(os.getenv("ARKITEKT_GATEWAY"))
+
+    # COnver step here for apptainer
 
     container = docker.containers.run(
         flavour.image,

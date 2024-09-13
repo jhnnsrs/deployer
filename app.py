@@ -1,72 +1,82 @@
-from arkitekt_next import easy, register, startup, background
+import asyncio
+import datetime
+import os
+import time
+from dataclasses import dataclass, field
+from typing import AsyncGenerator, Dict
+import xarray as xr
+import numpy as np
+from docker import DockerClient, from_env
+
+from arkitekt_next import background, context, easy, register, startup
 from kabinet.api.schema import (
-    create_github_repo,
-    match_flavour,
-    EnvironmentInput,
-    ContainerType,
+    Backend,
+    Deployment,
     Pod,
+    PodStatus,
+    Release,
+    adeclare_backend,
+    adump_logs,
     aupdate_pod,
     create_deployment,
-    adeclare_backend,
-    Deployment,
-    Definition,
     create_pod,
-    PodStatus,
-    adump_logs,
-    Release,
-    Pod,
+    delete_pod,
 )
-from rekuest_next.actors.reactive.api import aprogress, progress
+from mikro_next.api.schema import Image, from_array_like
+from rekuest_next.actors.reactive.api import (
+    progress,
+    log,
+    useInstanceID,
+)
 from unlok_next.api.schema import (
-    create_client,
     DevelopmentClientInput,
     ManifestInput,
     Requirement,
+    create_client,
 )
-from docker import from_env, DockerClient
-from rekuest_next.actors.reactive.api import useContext, useInstanceID
-import datetime
-import asyncio
-from typing import Dict, AsyncGenerator
-import os
+
 # Connect to local Docker
 
-ME = os.getenv("INSTANCE_ID", "inside_docker")
+ME = os.getenv("INSTANCE_ID", "FAKE GOD")
+ARKITEKT_GATEWAY = os.getenv("ARKITEKT_GATEWAY", "caddy")
+ARKITEKT_NETWORK = os.getenv("ARKITEKT_NETWORK", "next_default")
 
 
-async def in_container_startup_hook():
-    print(
-        "Should inspect if container id and push this to the kabinet server, that it is active.. Maybe for longer"
-    )
-    return {}
+@context
+@dataclass
+class ArkitektContext:
+    backend: Backend
+    docker: DockerClient
+    instance_id: str
+    gateway: str = field(default=ARKITEKT_GATEWAY)
+    network: str = field(default=ARKITEKT_NETWORK)
 
 
 @startup
-async def on_startup(state):
+async def on_startup(instance_id) -> ArkitektContext:
     print("Starting up")
-    print("Check for containers that are no longer pods?")
+    print("Check sfosr scontainers that are no longer pods?")
 
-    x = await adeclare_backend(
-        instance_id=state.get("instance_id"), name="Docker", kind="apptainer"
+    x = await adeclare_backend(instance_id=instance_id, name="Docker", kind="apptainer")
+
+    return ArkitektContext(
+        docker=from_env(),
+        gateway=ARKITEKT_GATEWAY,
+        network=ARKITEKT_NETWORK,
+        backend=x,
+        instance_id=instance_id,
     )
-
-    return {
-        "docker": from_env(),
-        "backend": x,
-        "gateway": os.getenv("ARKITEKT_GATEWAY"),
-        "network": os.getenv("ARKITEKT_NETWORK"),
-    }
 
 
 @background
-async def container_checker(context):
-    print("Starting up")
-    print("Check for containers that are no longer pods?")
+async def container_checker(context: ArkitektContext):
+    print("Starting dup")
+    print("Check for containers that are dno longer pods?")
 
     pod_status: Dict[str, PodStatus] = {}
 
     while True:
-        docker: DockerClient = context["docker"]
+        docker = context.docker
 
         my_containers = []
         container = docker.containers.list(all=True)
@@ -86,7 +96,7 @@ async def container_checker(context):
                         status=PodStatus.RUNNING
                         if container.status == "running"
                         else PodStatus.STOPPED,
-                        instance_id=context["instance_id"],
+                        instance_id=context.instance_id,
                     )
 
                     pod_status[container.id] = container.status
@@ -94,118 +104,31 @@ async def container_checker(context):
 
                     logs = container.logs(tail=60)
                     await adump_logs(p.id, logs.decode("utf-8"))
-            except:
+            except Exception as e:
+                print("Error updating pod status", e)
                 container.stop()
                 container.remove()
 
         await asyncio.sleep(5)
 
 
-@register(name="Install node")
-def install_node(node_hash: str) -> Pod:
-    env = EnvironmentInput(
-        containerType=ContainerType.DOCKER
-    )  # TODO: Retrieve this from the environment
+@register(name="dump_logs")
+async def dump_logs(context: ArkitektContext, pod: Pod) -> Pod:
+    print(pod.pod_id)
+    print(context.docker.containers.list())
+    container = context.docker.containers.get(pod.pod_id)
+    print("Getting logs")
+    logs = container.logs(tail=60)
+    print("Dumping logs")
+    await adump_logs(pod.id, logs.decode("utf-8"))
 
-    x = match_flavour([node_hash], env)
-
-    print(docker.api.pull(flavour.image))
-
-    progress(10)
-
-    deployment = create_deployment(
-        flavour=flavour,
-        instance_id=useInstanceID(),
-        local_id=flavour.image,
-        last_pulled=datetime.datetime.now(),
-    )
-
-    progress(30)
-
-    print(os.getenv("ARKITEKT_GATEWAY"))
-
-    container = docker.containers.run(
-        flavour.image,
-        detach=True,
-        labels={
-            "arkitekt.live.kabinet": ME,
-            "arkitekt.live.kabinet.deployment": deployment.id,
-        },
-        environment={"FAKTS_TOKEN": token},
-        command=f"arkitekt-next run prod --token {token} --url {caddy_url}",
-        network=network,
-    )
-
-    print("Deployed container on network", network, token, caddy_url)
-
-    progress(90)
-
-    z = create_pod(
-        deployment=deployment, instance_id=useInstanceID(), local_id=container.id
-    )
-
-    return z
-
-
-@register(name="Install definition")
-def install_definition(defi: Definition) -> Pod:
-    """Install definition
-
-    Installs a definition and returns the pod that is running it.
-
-
-    """
-    env = EnvironmentInput(
-        containerType=ContainerType.DOCKER
-    )  # TODO: Retrieve this from the environment
-
-    x = match_flavour([node_hash], env)
-
-    print(docker.api.pull(flavour.image))
-
-    progress(10)
-
-    deployment = create_deployment(
-        flavour=flavour,
-        instance_id=useInstanceID(),
-        local_id=flavour.image,
-        last_pulled=datetime.datetime.now(),
-    )
-
-    progress(30)
-
-    print(os.getenv("ARKITEKT_GATEWAY"))
-
-    container = docker.containers.run(
-        flavour.image,
-        detach=True,
-        labels={
-            "arkitekt.live.kabinet": ME,
-            "arkitekt.live.kabinet.deployment": deployment.id,
-        },
-        environment={"FAKTS_TOKEN": token},
-        command=f"arkitekt-next run prod --token {token} --url {caddy_url}",
-        network=network,
-    )
-
-    print("Deployed container on network", network, token, caddy_url)
-
-    progress(90)
-
-    z = create_pod(
-        deployment=deployment, instance_id=useInstanceID(), local_id=container.id
-    )
-
-    return z
+    return pod
 
 
 @register(name="Runner")
-def run(deployment: Deployment) -> Pod:
+def run(deployment: Deployment, context: ArkitektContext) -> Pod:
     print(deployment)
-    docker: DockerClient = useContext("docker")
-
-    print("Running")
-    container = docker.containers.run(
+    container = context.docker.containers.run(
         deployment.local_id, detach=True, labels={"arkitekt.live.kabinet": ME}
     )
 
@@ -218,20 +141,20 @@ def run(deployment: Deployment) -> Pod:
 
 
 @register(name="Restart")
-def restart(pod: Pod) -> Pod:
+def restart(pod: Pod, context: ArkitektContext) -> Pod:
     """Restart
 
     Restarts a pod by stopping and starting it again.
 
 
     """
-    docker: DockerClient = useContext("docker")
 
     print("Running")
-    container = docker.containers.get(pod.pod_id)
+    container = context.docker.containers.get(pod.pod_id)
 
+    progress(50)
     container.restart()
-
+    progress(100)
     return pod
 
 
@@ -240,51 +163,62 @@ def move(pod: Pod) -> Pod:
     """Move"""
     print("Moving node")
 
+    progress(0)
+
+    # Simulating moving a node
+    for i in range(10):
+        progress(i * 10)
+        time.sleep(1)
+
     return pod
 
 
 @register(name="Stop")
-def stop(pod: Pod) -> Pod:
+def stop(pod: Pod, context: ArkitektContext) -> Pod:
     """Stop
 
     Stops a pod by stopping and does not start it again.
 
 
     """
-    docker: DockerClient = useContext("docker")
 
     print("Running")
-    container = docker.containers.get(pod.pod_id)
+    container = context.docker.containers.get(pod.pod_id)
 
     container.stop()
 
     return pod
 
 
-@register(name="Remove")
-def remove(pod: Pod) -> Pod:
+@register(name="Removedd")
+def remove(pod: Pod, context: ArkitektContext) -> Pod:
     """Remove
 
     Remove a pod by stopping and removing it.
 
 
     """
-    docker: DockerClient = useContext("docker")
 
     print("Running")
-    container = docker.containers.get(pod.pod_id)
+    try:
+        container = context.docker.containers.get(pod.pod_id)
 
-    container.remove()
+        container.remove()
+    except Exception as e:
+        log(e)
+        print(e)
+
+    delete_pod(pod.id)
 
     return pod
 
 
 @register(name="Deploy")
-def deploy(release: Release) -> Pod:
+def deploy(release: Release, context: ArkitektContext) -> Pod:
     print(release)
-    docker: DockerClient = useContext("docker")
-    caddy_url = useContext("gateway")
-    network = useContext("network")
+    docker: DockerClient = context.docker
+    caddy_url = context.gateway
+    network = context.network
 
     flavour = release.flavours[0]
 
@@ -339,7 +273,7 @@ def deploy(release: Release) -> Pod:
         network=network,
     )
 
-    print("Deployed container on network", network, token, caddy_url)
+    print("Deployed container on network", network, token, caddy_url, container.name)
 
     progress(90)
 
@@ -350,18 +284,11 @@ def deploy(release: Release) -> Pod:
     return z
 
 
-@register(name="Yielder")
-async def yielder(number: int) -> AsyncGenerator[int, None]:
-    while True:
-        print("yielding")
-        yield 4
-        await asyncio.sleep(2)
-
-
-@register(name="Installer")
-async def installer(number: int) -> AsyncGenerator[int, None]:
+@register(name="Progresso")
+def progresso():
     for i in range(10):
-        await aprogress(0.1 * i)
-        await asyncio.sleep(1)
+        print("Sending progress")
+        progress(i * 10)
+        time.sleep(1)
 
-    return 10
+    return None

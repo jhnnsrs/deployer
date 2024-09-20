@@ -1,13 +1,13 @@
 import asyncio
 import datetime
 import os
+import random
 import time
 from dataclasses import dataclass, field
-from typing import AsyncGenerator, Dict
+from typing import AsyncGenerator, Dict, List
 import xarray as xr
 import numpy as np
 from docker import DockerClient, from_env
-
 from arkitekt_next import background, context, easy, register, startup
 from kabinet.api.schema import (
     Backend,
@@ -15,12 +15,14 @@ from kabinet.api.schema import (
     Pod,
     PodStatus,
     Release,
+    Resource,
     adeclare_backend,
     adump_logs,
     aupdate_pod,
     create_deployment,
     create_pod,
     delete_pod,
+    adeclare_resource,
 )
 from mikro_next.api.schema import Image, from_array_like
 from rekuest_next.actors.reactive.api import (
@@ -35,7 +37,7 @@ from unlok_next.api.schema import (
     create_client,
 )
 
-# Connect to local Docker
+# Connect to local Dockers
 
 ME = os.getenv("INSTANCE_ID", "FAKE GOD")
 ARKITEKT_GATEWAY = os.getenv("ARKITEKT_GATEWAY", "caddy")
@@ -50,6 +52,7 @@ class ArkitektContext:
     instance_id: str
     gateway: str = field(default=ARKITEKT_GATEWAY)
     network: str = field(default=ARKITEKT_NETWORK)
+    resources: List[Resource] = field(default_factory=list)
 
 
 @startup
@@ -59,12 +62,22 @@ async def on_startup(instance_id) -> ArkitektContext:
 
     x = await adeclare_backend(instance_id=instance_id, name="Docker", kind="apptainer")
 
+    resources = []
+    for i in range(4):
+        print("Checking containers")
+        resources.append(
+            await adeclare_resource(
+                resource_id=f"node_id{i}", instance_id=x.id, name="Node 1"
+            )
+        )
+
     return ArkitektContext(
         docker=from_env(),
         gateway=ARKITEKT_GATEWAY,
         network=ARKITEKT_NETWORK,
         backend=x,
         instance_id=instance_id,
+        resources=resources,
     )
 
 
@@ -93,9 +106,11 @@ async def container_checker(context: ArkitektContext):
                 if container.status != old_status:
                     p = await aupdate_pod(
                         local_id=container.id,
-                        status=PodStatus.RUNNING
-                        if container.status == "running"
-                        else PodStatus.STOPPED,
+                        status=(
+                            PodStatus.RUNNING
+                            if container.status == "running"
+                            else PodStatus.STOPPED
+                        ),
                         instance_id=context.instance_id,
                     )
 
@@ -230,7 +245,7 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
         [Requirement(key=key, **value) for key, value in flavour.requirements.items()]
     )
 
-    token = create_client(
+    client = create_client(
         DevelopmentClientInput(
             manifest=ManifestInput(
                 identifier=release.app.identifier,
@@ -246,7 +261,7 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
 
     print(docker.api.pull(flavour.image))
 
-    progress(10)
+    progress(60, "Pulled image")
 
     deployment = create_deployment(
         flavour=flavour,
@@ -255,7 +270,8 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
         last_pulled=datetime.datetime.now(),
     )
 
-    progress(30)
+    progress(70, "Starting container")
+
 
     print(os.getenv("ARKITEKT_GATEWAY"))
 
@@ -268,27 +284,34 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
             "arkitekt.live.kabinet": ME,
             "arkitekt.live.kabinet.deployment": deployment.id,
         },
-        environment={"FAKTS_TOKEN": token},
-        command=f"arkitekt-next run prod --token {token} --url {caddy_url}",
+        environment={"FAKTS_TOKEN": client.token},
+        command=f"arkitekt-next run prod --token {client.token} --url {caddy_url}",
         network=network,
     )
 
-    print("Deployed container on network", network, token, caddy_url, container.name)
+    print(
+        "Deployed container on network",
+        network,
+        client.token,
+        caddy_url,
+        container.name,
+    )
 
     progress(90)
 
+    resource = random.choice(context.resources)
+
     z = create_pod(
-        deployment=deployment, instance_id=useInstanceID(), local_id=container.id
+        deployment=deployment,
+        instance_id=useInstanceID(),
+        local_id=container.id,
+        client_id=client.oauth2_client.client_id,
+        resource=resource,
     )
 
     return z
 
 
-@register(name="Progresso")
-def progresso():
-    for i in range(10):
-        print("Sending progress")
-        progress(i * 10)
-        time.sleep(1)
-
-    return None
+if __name__ == "__main__":
+    with easy("docker") as e:
+        e.services.get("rekuest").run()

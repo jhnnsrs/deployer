@@ -1,6 +1,6 @@
 builds:
-- build_id: 6f492714-e9ff-466e-8361-9a28f5ebb3b8
-  build_run: 218ecec9-99c3-487b-96d6-9e2078967b03
+- build_id: aa06db0a-e168-44b4-b127-e48435075c33
+  build_run: 1a3fb01e-23b2-4301-b6a5-73e12ad71961
   description: This is a vanilla flavour
   flavour: vanilla
   inspection:
@@ -9,7 +9,7 @@ builds:
         description: An instance of ArkitektNext Datalayer to make requests to the
           user's data
         optional: true
-        service: live.arkitekt.datalayer
+        service: live.arkitekt.s3
       fluss:
         description: An instance of ArkitektNext fluss to retrieve graphs from
         optional: false
@@ -18,6 +18,10 @@ builds:
         description: An instance of ArkitektNext Kabinet to retrieve nodes from
         optional: false
         service: live.arkitekt.kabinet
+      livekit:
+        description: An instance of ArkitektNext Lok to authenticate the user
+        optional: false
+        service: io.livekit.livekit
       lok:
         description: An instance of ArkitektNext Lok to authenticate the user
         optional: false
@@ -35,12 +39,32 @@ builds:
         description: An instance of ArkitektNext Lok to authenticate the user
         optional: false
         service: live.arkitekt.lok
-    size: 515449119
+    size: 542990668
     templates:
     - definition:
         args:
-        - identifier: '@kabinet/release'
-          key: release
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
+          key: pod
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
@@ -50,20 +74,48 @@ builds:
         isDev: false
         isTestFor: []
         kind: FUNCTION
-        name: Deploy
+        name: dump_logs
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
-      interface: deploy
+      interface: dump_logs
     - definition:
         args:
-        - identifier: '@kabinet/deployment'
+        - assignWidget:
+            kind: SEARCH
+            query: "query SearchDeployments($search: String, $values: [ID!]) {\n \
+              \ options: deployments(\n    filters: {search: $search, ids: $values}\n\
+              \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+              \  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/deployment'
           key: deployment
           kind: STRUCTURE
           nullable: false
@@ -77,17 +129,58 @@ builds:
         name: Runner
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
       interface: run
     - definition:
         args:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: pod
           kind: STRUCTURE
           nullable: false
@@ -101,17 +194,58 @@ builds:
         name: Restart
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
       interface: restart
     - definition:
         args:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: pod
           kind: STRUCTURE
           nullable: false
@@ -125,17 +259,58 @@ builds:
         name: Move
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
       interface: move
     - definition:
         args:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: pod
           kind: STRUCTURE
           nullable: false
@@ -149,17 +324,58 @@ builds:
         name: Stop
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
       interface: stop
     - definition:
         args:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: pod
           kind: STRUCTURE
           nullable: false
@@ -170,43 +386,49 @@ builds:
         isDev: false
         isTestFor: []
         kind: FUNCTION
-        name: Remove
+        name: Removedd
         portGroups: []
         returns:
-        - identifier: '@kabinet/pod'
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
           key: return0
           kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
       interface: remove
     - definition:
         args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
+        - assignWidget:
+            kind: SEARCH
+            query: "query SearchReleases($search: String, $values: [ID!]) {\n  options:\
+              \ releases(\n    filters: {search: $search, ids: $values}\n    pagination:\
+              \ {limit: 10}\n  ) {\n    value: id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/release'
+          key: release
+          kind: STRUCTURE
           nullable: false
           scope: GLOBAL
         collections: []
@@ -215,16 +437,53 @@ builds:
         isDev: false
         isTestFor: []
         kind: FUNCTION
-        name: Installer
+        name: Deploy
         portGroups: []
         returns:
-        - key: return0
-          kind: INT
+        - assignWidget:
+            filters:
+            - assignWidget:
+                kind: SEARCH
+                query: "query SearchDeployments($search: String, $values: [ID!]) {\n\
+                  \  options: deployments(\n    filters: {search: $search, ids: $values}\n\
+                  \    pagination: {limit: 10}\n  ) {\n    value: id\n    label: name\n\
+                  \  }\n}"
+                ward: kabinet
+              identifier: '@kabinet/deployment'
+              key: deployment
+              kind: STRUCTURE
+              nullable: true
+              scope: GLOBAL
+            kind: SEARCH
+            query: "query SearchPods($search: String, $values: [ID!], $backend: ID)\
+              \ {\n  options: pods(\n    filters: {search: $search, ids: $values,\
+              \ backend: $backend}\n    pagination: {limit: 10}\n  ) {\n    value:\
+              \ id\n    label: name\n  }\n}"
+            ward: kabinet
+          identifier: '@kabinet/pod'
+          key: return0
+          kind: STRUCTURE
           nullable: false
           scope: GLOBAL
+        stateful: false
       dependencies: []
       dynamic: false
-      interface: installer
+      interface: deploy
+    - definition:
+        args: []
+        collections: []
+        description: No Description
+        interfaces: []
+        isDev: false
+        isTestFor: []
+        kind: FUNCTION
+        name: Progresso
+        portGroups: []
+        returns: []
+        stateful: false
+      dependencies: []
+      dynamic: false
+      interface: progresso
   manifest:
     author: jhnnsrs
     entrypoint: app
@@ -233,3046 +492,4 @@ builds:
     - read
     version: 0.0.1
   selectors: []
-- build_id: b39baca9-d640-4da3-9f60-f0e4d287d8fa
-  build_run: c0eb5f99-f294-441c-95b5-c158fda9c6d8
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516701961
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.1
-  selectors: []
-- build_id: 6e4c91ac-3173-4daf-92ab-0372f17eb940
-  build_run: 273befaa-2fe6-4e31-8492-7de5d44b6aed
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516708018
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.2
-  selectors: []
-- build_id: b3e39447-42e0-4d15-b5ec-a0e2f075b619
-  build_run: 0a7e959e-686f-44d2-b551-28c4c040ad9c
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516720487
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.3
-  selectors: []
-- build_id: ba968319-bf8f-48b3-bf2e-c368978bf57c
-  build_run: 1549692d-eba7-4f12-857e-a65a8fe92dc4
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516732753
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.4
-  selectors: []
-- build_id: cb6dc110-7e22-4dce-ad54-f1f323f377a5
-  build_run: 00cc3010-5dfd-4742-8854-8546f229b6cb
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516738805
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.4
-  selectors: []
-- build_id: eb4a9365-fe17-42aa-9f35-efae4fe0348a
-  build_run: 19ed259b-bafb-43c4-91b8-abd082b62314
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516744863
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.4
-  selectors: []
-- build_id: 42f34b49-723e-4f45-92ef-e8bf3741eebc
-  build_run: 941f7831-c608-49bd-89cc-d412cabde742
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516750919
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.4
-  selectors: []
-- build_id: 80655faa-9346-4707-b1e5-67a24b64c814
-  build_run: 6b57e9ff-c1f7-411d-a9b1-9f3c7599a072
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516756976
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.4
-  selectors: []
-- build_id: 2df4eddf-956a-45d1-836e-acfdf6ed8028
-  build_run: 69d445ef-35fa-45fd-96ea-12a3036947b5
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516763031
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.5
-  selectors: []
-- build_id: 7e698c72-a440-4cbb-93e0-51471eeb96e1
-  build_run: 8d84f086-5e92-4af0-96fb-2cf1e4d862f2
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516775380
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.5
-  selectors: []
-- build_id: bf481487-6392-4f23-95c9-6dbda9cb81df
-  build_run: 2b232935-54c2-4704-ac4a-613d42f09bfc
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516781436
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.6
-  selectors: []
-- build_id: 1ff02131-7f16-4c9a-9cbe-21df776387a8
-  build_run: 2f39748d-d991-4d87-995a-4c6656e0f8cc
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516793793
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.7
-  selectors: []
-- build_id: a7307cf9-5d31-47ef-8ec6-5678471b58bd
-  build_run: 09db8066-4254-4e25-a164-a4996f98bea3
-  description: This is a vanilla flavour
-  flavour: vanilla
-  inspection:
-    requirements:
-      datalayer:
-        description: An instance of ArkitektNext Datalayer to make requests to the
-          user's data
-        optional: true
-        service: live.arkitekt.s3
-      fluss:
-        description: An instance of ArkitektNext fluss to retrieve graphs from
-        optional: false
-        service: live.arkitekt.fluss
-      kabinet:
-        description: An instance of ArkitektNext Kabinet to retrieve nodes from
-        optional: false
-        service: live.arkitekt.kabinet
-      lok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-      mikro:
-        description: An instance of ArkitektNext Mikro to make requests to the user's
-          data
-        optional: true
-        service: live.arkitekt.mikro
-      rekuest:
-        description: An instance of ArkitektNext Rekuest to assign to nodes
-        optional: false
-        service: live.arkitekt.rekuest
-      unlok:
-        description: An instance of ArkitektNext Lok to authenticate the user
-        optional: false
-        service: live.arkitekt.lok
-    size: 516807894
-    templates:
-    - definition:
-        args:
-        - identifier: '@kabinet/release'
-          key: release
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Deploy
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: deploy
-    - definition:
-        args:
-        - identifier: '@kabinet/deployment'
-          key: deployment
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Runner
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: run
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Restarts a pod by stopping and starting it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Restart
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: restart
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Move
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: move
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Stops a pod by stopping and does not start it again.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Stop
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: stop
-    - definition:
-        args:
-        - identifier: '@kabinet/pod'
-          key: pod
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: Remove a pod by stopping and removing it.
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Remove
-        portGroups: []
-        returns:
-        - identifier: '@kabinet/pod'
-          key: return0
-          kind: STRUCTURE
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: remove
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: GENERATOR
-        name: Yielder
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: yielder
-    - definition:
-        args:
-        - key: number
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-        collections: []
-        description: No Description
-        interfaces: []
-        isDev: false
-        isTestFor: []
-        kind: FUNCTION
-        name: Installer
-        portGroups: []
-        returns:
-        - key: return0
-          kind: INT
-          nullable: false
-          scope: GLOBAL
-      dependencies: []
-      dynamic: false
-      interface: installer
-  manifest:
-    author: jhnnsrs
-    entrypoint: app
-    identifier: deployer
-    scopes:
-    - read
-    version: 0.0.8
-  selectors: []
-latest_build_run: 09db8066-4254-4e25-a164-a4996f98bea3
+latest_build_run: 1a3fb01e-23b2-4301-b6a5-73e12ad71961

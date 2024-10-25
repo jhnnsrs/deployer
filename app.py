@@ -239,10 +239,10 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
 
     progress(0)
 
-    print("OAINDFOAIWNDOAINWDOIANWd")
+    print(flavour.requirements)
 
     print(
-        [Requirement(key=key, **value) for key, value in flavour.requirements.items()]
+        [Requirement(**req.model_dump()) for req in flavour.requirements]
     )
 
     client = create_client(
@@ -252,21 +252,18 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
                 version=release.version,
                 scopes=flavour.manifest["scopes"],
             ),
-            requirements=[
-                Requirement(key=key, **value)
-                for key, value in flavour.requirements.items()
-            ],
+            requirements=[Requirement(**req.model_dump()) for req in flavour.requirements],
         )
     )
 
-    print(docker.api.pull(flavour.image))
+    print(docker.api.pull(flavour.image.image_string))
 
     progress(60, "Pulled image")
 
     deployment = create_deployment(
         flavour=flavour,
         instance_id=useInstanceID(),
-        local_id=flavour.image,
+        local_id=flavour.image.image_string,
         last_pulled=datetime.datetime.now(),
     )
 
@@ -278,7 +275,7 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
     # COnver step here for apptainer
 
     container = docker.containers.run(
-        flavour.image,
+        flavour.image.image_string,
         detach=True,
         labels={
             "arkitekt.live.kabinet": ME,

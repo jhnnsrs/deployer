@@ -9,6 +9,7 @@ import xarray as xr
 import numpy as np
 from docker import DockerClient, from_env
 import docker.types
+from urllib.parse import urlsplit
 from arkitekt_next import background, context, easy, register, startup
 from kabinet.api.schema import (
     Backend,
@@ -40,6 +41,7 @@ from unlok_next.api.schema import (
     Requirement,
     create_client,
 )
+from fakts_next import get_current_fakts_next
 
 # Connect to local Dockers
 
@@ -84,6 +86,7 @@ class ArkitektContext:
     gateway: str = field(default=ARKITEKT_GATEWAY)
     network: str = field(default=ARKITEKT_NETWORK)
     resources: List[Resource] = field(default_factory=list)
+    endpoint_url: str = field(default="localhost")
 
 
 @startup
@@ -103,6 +106,9 @@ async def on_startup(instance_id) -> ArkitektContext:
             )
         )
 
+    fakts = get_current_fakts_next()
+    endpoint_url = await fakts.aget("lok.endpoint_url")
+
     return ArkitektContext(
         docker=from_env(),
         gateway=ARKITEKT_GATEWAY,
@@ -110,6 +116,7 @@ async def on_startup(instance_id) -> ArkitektContext:
         backend=x,
         instance_id=instance_id,
         resources=resources,
+        endpoint_url=urlsplit(endpoint_url).hostname,
     )
 
 
@@ -285,7 +292,6 @@ def deploy_flavour(flavour: Flavour, context: ArkitektContext) -> Pod:
 
 
     docker: DockerClient = context.docker
-    caddy_url = context.gateway
     network = context.network
 
 
@@ -342,7 +348,7 @@ def deploy_flavour(flavour: Flavour, context: ArkitektContext) -> Pod:
             "arkitekt.live.kabinet.deployment": deployment.id,
         },
         environment={"FAKTS_TOKEN": client.token},
-        command=f"arkitekt-next run prod --token {client.token} --url {caddy_url}",
+        command=f"arkitekt-next run prod --token {client.token} --url {context.endpoint_url}",
         network=network,
         **extra_params
     )
@@ -351,7 +357,7 @@ def deploy_flavour(flavour: Flavour, context: ArkitektContext) -> Pod:
         "Deployed container on network",
         network,
         client.token,
-        caddy_url,
+        context.endpoint_url,
         container.name,
     )
 
@@ -398,7 +404,6 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
 
     print(release)
     docker: DockerClient = context.docker
-    caddy_url = context.gateway
     network = context.network
 
     flavour = release.flavours[0]
@@ -453,7 +458,7 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
             "arkitekt.live.kabinet.deployment": deployment.id,
         },
         environment={"FAKTS_TOKEN": client.token},
-        command=f"arkitekt-next run prod --token {client.token} --url {caddy_url}",
+        command=f"arkitekt-next run prod --token {client.token} --url {context.endpoint_url}",
         network=network,
         **extra_params
         
@@ -463,7 +468,7 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
         "Deployed container on network",
         network,
         client.token,
-        caddy_url,
+        context.endpoint_url,
         container.name,
     )
 

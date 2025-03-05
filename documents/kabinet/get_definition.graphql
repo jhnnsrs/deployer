@@ -1,0 +1,8 @@
+query GetDetailDefinition($definition: ID!) {
+  definition(id: $definition) {
+    id
+    flavours {
+        id
+    }
+  }
+}

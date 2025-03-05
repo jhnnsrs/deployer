@@ -12,6 +12,7 @@ import docker.types
 from arkitekt_next import background, context, easy, register, startup
 from kabinet.api.schema import (
     Backend,
+    Definition,
     Deployment,
     Flavour,
     Pod,
@@ -19,13 +20,16 @@ from kabinet.api.schema import (
     Release,
     Resource,
     ListFlavour,
-    ListFlavourSelectorsCudaSelector,
+    CudaSelector,
+    update_pod,
     adeclare_backend,
     adump_logs,
     aupdate_pod,
     create_deployment,
+    dump_logs,
     create_pod,
     delete_pod,
+    get_flavour,
     adeclare_resource,
 )
 from mikro_next.api.schema import Image, from_array_like
@@ -34,6 +38,7 @@ from rekuest_next.actors.reactive.api import (
     log,
     useInstanceID,
 )
+from api.kabinet import aget_detail_definition, get_detail_definition
 from unlok_next.api.schema import (
     DevelopmentClientInput,
     ManifestInput,
@@ -56,22 +61,13 @@ def _docker_params_from_flavour(flavour: ListFlavour) -> Dict[str, str]:
 
     for selector in flavour.selectors:
 
-        if isinstance(selector, ListFlavourSelectorsCudaSelector):
+        if isinstance(selector, CudaSelector):
             docker_params.setdefault("device_requests", []).append(
                 docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
             )
 
 
     return docker_params
-
-
-
-
-
-
-
-
-
 
 
 
@@ -114,7 +110,7 @@ async def on_startup(instance_id) -> ArkitektContext:
 
 
 @background
-async def container_checker(context: ArkitektContext):
+def container_checker(context: ArkitektContext):
     """ A background function that runs in the background.
 
     It checks for containers that are no longer pods and updates their status.
@@ -143,7 +139,7 @@ async def container_checker(context: ArkitektContext):
             try:
                 old_status = pod_status.get(container.id, None)
                 if container.status != old_status:
-                    p = await aupdate_pod(
+                    p = update_pod(
                         local_id=container.id,
                         status=(
                             PodStatus.RUNNING
@@ -157,17 +153,17 @@ async def container_checker(context: ArkitektContext):
                     print("Updated Container Status")
 
                     logs = container.logs(tail=60)
-                    await adump_logs(p.id, logs.decode("utf-8"))
+                    dump_logs(p.id, logs.decode("utf-8"))
             except Exception as e:
                 print("Error updating pod status", e)
                 container.stop()
                 container.remove()
 
-        await asyncio.sleep(5)
+        time.sleep(10)
 
 
 @register(name="Refresh Logs")
-async def refresh_logs(context: ArkitektContext, pod: Pod) -> Pod:
+def refresh_logs(context: ArkitektContext, pod: Pod) -> Pod:
     """ Refresh Logs
 
     Refreshes the logs of a pod by getting the logs from the container and updating the logs of the pod.
@@ -194,7 +190,7 @@ async def refresh_logs(context: ArkitektContext, pod: Pod) -> Pod:
     print("Getting logs")
     logs = container.logs(tail=60)
     print("Dumping logs")
-    await adump_logs(pod.id, logs.decode("utf-8"))
+    dump_logs(pod.id, logs.decode("utf-8"))
 
     return pod
 
@@ -300,17 +296,29 @@ def deploy_flavour(flavour: Flavour, context: ArkitektContext) -> Pod:
     )
 
     client = create_client(
-        DevelopmentClientInput(
-            manifest=ManifestInput(
+        manifest=ManifestInput(
                 identifier=release.app.identifier,
                 version=release.version,
                 scopes=flavour.manifest["scopes"],
-            ),
-            requirements=[Requirement(**req.model_dump()) for req in flavour.requirements],
-        )
+        ),
+        requirements=[Requirement(**req.model_dump()) for req in flavour.requirements],
+        
     )
 
-    print(docker.api.pull(flavour.image.image_string))
+    # Track progress of each layer
+    layer_progress = {}
+    for line in docker.api.pull(flavour.image.image_string, stream=True, decode=True):
+        if 'id' in line and 'progress' in line:
+            # Update progress based on pull status
+            progress_detail = line.get('progressDetail', {})
+            if progress_detail and 'current' in progress_detail and 'total' in progress_detail:
+                layer_id = line['id']
+                layer_progress[layer_id] = (progress_detail['current'] / progress_detail['total']) * 100
+                avg_progress = int(sum(layer_progress.values()) / len(layer_progress)) // 2
+                progress(avg_progress, f"Pulling: {line.get('status', '')} - {line.get('progress', '')}")
+        elif 'status' in line:
+            progress(30, f"Status: {line['status']}")
+
 
     progress(60, "Pulled image")
 
@@ -412,18 +420,51 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
     )
 
     client = create_client(
-        DevelopmentClientInput(
             manifest=ManifestInput(
                 identifier=release.app.identifier,
                 version=release.version,
                 scopes=flavour.manifest["scopes"],
             ),
             requirements=[Requirement(**req.model_dump()) for req in flavour.requirements],
-        )
     )
 
-    print(docker.api.pull(flavour.image.image_string))
+    # Track progress of each layer and global GB info
+    layer_progress = {}
+    last_update = time.time()
+    current_status = ""
+    status_updates = 5
+    
+    progress(10, "Pulling image")
+    for line in docker.api.pull(flavour.image.image_string, stream=True, decode=True):
+        if 'id' in line and 'progress' in line:
+            # Update progress based on pull status
+            progress_detail = line.get('progressDetail', {})
+            if progress_detail and 'current' in progress_detail and 'total' in progress_detail:
+                layer_id = line['id']
+                layer_progress[layer_id] = (progress_detail['current'] / progress_detail['total']) * 100
+                avg_progress = int(sum(layer_progress.values()) / len(layer_progress)) // 2
+                
+                # Extract GB info without progress symbols
+                progress_str = line.get('progress', '')
+                progress_str = progress_str.replace('\[', '').replace('>', '').replace('\]', '').replace('=', '')
+                gb_info = ' '.join(word for word in progress_str.split() if 'GB' in word)
+                
+                current_status = f"Pulling: {line.get('status', '')}"
+                if gb_info:
+                    current_status += f" - {gb_info}"
+                
+                # Only update progress every 10 seconds
+                if time.time() - last_update >= status_updates:
+                    progress(avg_progress, current_status)
+                    last_update = time.time()
+                    
+        elif 'status' in line:
+            current_status = f"Status: {line['status']}"
+            if time.time() - last_update >= status_updates:
+                progress(30, current_status)
+                last_update = time.time()
 
+    progress(60, "Pulled image")
     progress(60, "Pulled image")
 
     deployment = create_deployment(
@@ -480,6 +521,43 @@ def deploy(release: Release, context: ArkitektContext) -> Pod:
     )
 
     return z
+
+
+
+@register(name="Deploy Definition")
+def deploy_definition(definition: Definition, context: ArkitektContext) -> Pod:
+    """Deploy
+
+    Deploys a definition to the current docker instance.
+
+    Parameters
+    ----------
+
+    definition: Definition
+        The definition to deploy
+
+    context: ArkitektContext
+        The context of the current instance
+
+    
+    Returns
+    -------
+
+    Pod
+        The pod that was deployed
+
+    """
+    
+    detail = get_detail_definition(definition.id)
+    
+    
+    print(detail)
+    
+    selected_flavour = get_flavour(detail.flavours[0])
+    
+    return deploy_flavour(selected_flavour, context)
+
+
 
 
 if __name__ == "__main__":
